@@ -1,2 +1,9 @@
 .venv/
-venv
+
+*.tenv*
+
+*chroma_store/*
+*__pycache__/*
+.env
+*-checkpoint*
+
