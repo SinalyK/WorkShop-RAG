@@ -1,6 +1,6 @@
 import streamlit as st
 
-from workshop import agent
+from app.workshop_ import agent
 import asyncio
 
 # 
