@@ -11,7 +11,7 @@ from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
-from app import system_prompt_fast,final_formatted_prompt,final_formatted_prompt_
+from prompt import system_prompt_fast,final_formatted_prompt,final_formatted_prompt_
 
 logger = Logger(__name__)
 
@@ -42,6 +42,7 @@ class ReActAgent:
         self.llm = llm
         self.max_iterations = max_iterations
         self.steps: BaseMessage = []
+        self.documents = []
         self.state: AgentState = None
         self.llm_with_structured_output = llm.with_structured_output(MarkdownAnswer)
 
@@ -103,7 +104,12 @@ class ReActAgent:
         messages = await self._build_conversation_history(state)
 
         # Add system prompt to guide next step
-        full_messages = [HumanMessage(content=system_prompt_fast)] + messages
+        final_prompt = system_prompt_fast.format(
+            tools_description="\n".join([f"{i+1}. {tool.name}: {tool.description}" for i, tool in enumerate(self.tool_map.values())]), 
+            tools_name = ", ".join([tool.name for tool in self.tool_map.values()])
+            )
+        
+        full_messages = [HumanMessage(content=final_prompt)] + messages
 
         # Get LLM response
         response = None
@@ -256,7 +262,7 @@ class ReActAgent:
 
         # memory management
         self.steps = []
-        groq = False
+        groq = True
 
         try:
             final_prompt = (
@@ -277,7 +283,7 @@ class ReActAgent:
                 else:
                     try:
                         data = json.loads(final_answer.content)
-                        content = data.get("markdown_answer", final_answer.content)
+                        content = [ d for d in data.values()][-1]
                     except Exception as e:
                         content = final_answer.content
 
@@ -340,12 +346,12 @@ class ReActAgent:
                 ]
 
         # ReAct steps memory
-        messages = history + [
-            HumanMessage(content=f"Question: {state['user_question']}")
-        ]
+        # messages = history + [
+        #     HumanMessage(content=f"Question: {state['user_question']}")
+        # ]
 
         # Add previous steps
-        messages = messages + self.steps
+        messages = self.steps
 
         if self.state.get("thought"):
             messages.append(AIMessage(content=f"Thought: {self.state['thought']}"))
@@ -371,8 +377,8 @@ class ReActAgent:
                 HumanMessage(content=f"Observation: {str(self.state['observation'])}")
             )
 
-        print("history: ", history)
-        logger.debug(f"Messages reconstruits : {messages}")
+        
+        print(f"Messages reconstruits : {messages}")
         return messages
 
     async def _summarize_history(self, history: List[BaseMessage]) -> str:
@@ -544,10 +550,6 @@ class ReActAgent:
                 text = "Retriever"
             if "tavilysearch" in text.lower():
                 text = "TavilySearch"
-
-            if text not in self.tool_map:
-                print(f"Action inconnue détectée : {text}")
-                text = "Retriever"
 
             print(f"Action nettoyée : {text}")
         except:

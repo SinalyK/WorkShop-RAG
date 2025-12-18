@@ -1,9 +1,95 @@
+# Virtual Environments
 .venv/
+venv/
+env/
+ENV/
+.Python
 
+# Environment Variables
+.env
+.env.local
+.env.*.local
 *.tenv*
 
-*chroma_store/*
-*__pycache__/*
-.env
-*-checkpoint*
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Poetry & Packaging
+poetry.lock
+Pipfile.lock
+*.whl
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+*-checkpoint.ipynb
+
+# RAG & Database
+chroma_store/
+*.sqlite3
+*.db
+*.chroma/
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project Specific
+.streamlit/
+*.pkl
+*.pickle
+*.joblib
+
+# Temporary Files
+temp/
+tmp/
+*.tmp
 

@@ -48,5 +48,16 @@ def fillful_data(retriever,reranker_rag,query, template, reranker = True):
     context = reranker_rag(query)
     verbose_context(context)
     return template.format(user_query = query, rag_context = context if context else "None")
+
+
+def fillful_data_agent(query):
+
+    if not query:
+        return "query must be a string"
+
+    context = reranker_rag(query)
+    #verbose_context(context)
+    #return template.format(user_query=query, rag_context=context if context else "None")
+    return context
     
 
