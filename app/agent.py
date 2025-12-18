@@ -1,7 +1,5 @@
 import json
-import os
 import re
-import textwrap
 import traceback
 from logging import Logger
 from typing import Any, Dict, List, Optional, TypedDict
@@ -13,7 +11,7 @@ from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
-from prompts import system_prompt_fast,final_formatted_prompt,final_formatted_prompt_
+from app import system_prompt_fast,final_formatted_prompt,final_formatted_prompt_
 
 logger = Logger(__name__)
 
@@ -36,8 +34,8 @@ class MarkdownAnswer(BaseModel):
 class ReActAgent:
     def __init__(
         self,
-        llm: BaseChatModel ,
-        #llm_nd: BaseChatModel ,
+        llm: BaseChatModel = None,
+        llm_nd: BaseChatModel = None,
         tools: List[BaseTool] = [],
         max_iterations: int = 20,
     ):
@@ -47,9 +45,8 @@ class ReActAgent:
         self.state: AgentState = None
         self.llm_with_structured_output = llm.with_structured_output(MarkdownAnswer)
 
-
         self.tool_map = {tool.name: tool for tool in tools}
-        #tool_names = [tool.name for tool in tools]
+        # tool_names = [tool.name for tool in tools]
 
         self.graph = self._build_graph()
 
@@ -166,7 +163,7 @@ class ReActAgent:
 
                 # Handle ChromaRetriever (expects query parameter)
                 if action == "Retriever":
- 
+
                     if isinstance(action_input, dict):
                         query = action_input.get("query", str(action_input))
                     else:
@@ -190,12 +187,12 @@ class ReActAgent:
                 elif action == "WeatherAction":
 
                     if isinstance(action_input, dict):
-                        observation = tool.func(action_input.get("city",""))
+                        observation = tool.func(action_input.get("city", ""))
                     else:
                         # Try to parse as JSON for WeatherAction
                         try:
                             parsed_input = json.loads(str(action_input))
-                            observation = tool.func(parsed_input.get("city",""))
+                            observation = tool.func(parsed_input.get("city", ""))
                         except Exception as e:
                             observation = f"Error: WeatherAction requires JSON input with 'url', 'method', and optional 'payload', {e}"
 
@@ -259,6 +256,7 @@ class ReActAgent:
 
         # memory management
         self.steps = []
+        groq = False
 
         try:
             final_prompt = (
@@ -268,12 +266,22 @@ class ReActAgent:
                 )
                 + final_formatted_prompt_
             )
-            # final_answer = await self._safe_final_invoke(
-            #     [HumanMessage(content=final_prompt)]
-            # )
-            #if isinstance(final_answer, MarkdownAnswer):
-            #print("bien de utilisé, final answer")
-            #self.state["final_answer"] = final_answer #.markdown_answer
+            final_answer = await self._safe_final_invoke(
+                [HumanMessage(content=final_prompt)], structured_output=False
+            )
+            if isinstance(final_answer, MarkdownAnswer)  or 1:
+                print("bien de utilisé, final answer")
+
+                if not groq:
+                    content = final_answer.markdown_answer
+                else:
+                    try:
+                        data = json.loads(final_answer.content)
+                        content = data.get("markdown_answer", final_answer.content)
+                    except Exception as e:
+                        content = final_answer.content
+
+                self.state["final_answer"] = content
         except Exception as e:
             traceback.print_exc()
             print(f"l'erreur de appel final: {e}")
@@ -452,7 +460,6 @@ class ReActAgent:
             "max_iterations": self.max_iterations,
         }
 
-
         # Execute the graph
         final_state = await self.graph.ainvoke(initial_state, {"recursion_limit": 100})
 
@@ -479,7 +486,10 @@ class ReActAgent:
         return path
 
     def _rotate_llm(self):
-        self.llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash")
+        if not isinstance(self.llm, ChatGoogleGenerativeAI):
+            self.llm = ChatGroq(model="openai/gpt-oss-20b")
+        else:
+            self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
     @backoff.on_exception(
         backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None
@@ -505,9 +515,12 @@ class ReActAgent:
     @backoff.on_exception(
         backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None
     )
-    async def _safe_final_invoke(self, full_messages):
+    async def _safe_final_invoke(self, full_messages,  structured_output=True):
         try:
-            return await self.llm_with_structured_output.ainvoke(full_messages)
+            if structured_output:
+                return await self.llm_with_structured_output.ainvoke(full_messages)
+            else:
+                return await self.llm.ainvoke(full_messages)
         except ResourceExhausted as e:
             print("[Quota] Clé API dépassée, on change...")
             self._rotate_llm()
@@ -527,10 +540,16 @@ class ReActAgent:
 
             if "weatheraction" in text.lower():
                 text = "WeatherAction"
-            if "chromaretriever" in text.lower():
+            if "retriever" in text.lower():
                 text = "Retriever"
             if "tavilysearch" in text.lower():
                 text = "TavilySearch"
+
+            if text not in self.tool_map:
+                print(f"Action inconnue détectée : {text}")
+                text = "Retriever"
+
+            print(f"Action nettoyée : {text}")
         except:
             pass
         return text
