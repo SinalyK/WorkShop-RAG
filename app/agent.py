@@ -11,7 +11,7 @@ from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
-from prompt import system_prompt_fast,final_formatted_prompt,final_formatted_prompt_
+from app.prompt import system_prompt_fast,final_formatted_prompt,final_formatted_prompt_
 
 logger = Logger(__name__)
 
@@ -123,7 +123,9 @@ class ReActAgent:
             response = await self.llm.ainvoke(full_messages)
 
         # Parse the response
+        print("LLM Response:", response.content)
         parsed_response = await self._parse_llm_response(response.content)
+        print("Parsed Response:", parsed_response)
 
         # get response final in final_answer when the response has any reasoning fields
         if not any(parsed_response.values()) and (response and response.content):

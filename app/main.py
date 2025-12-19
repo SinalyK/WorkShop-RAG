@@ -1,5 +1,5 @@
 import streamlit as st
-from workshop import agent
+from app.workshop import agent
 import asyncio
 
 st.set_page_config(
@@ -607,7 +607,7 @@ if ask_button and user_question:
     with st.spinner("Traitement de votre question..."):
         result = asyncio.run(agent.arun(user_question))
         answer = result.get("final_answer", "Désolé, je n'ai pas pu trouver de réponse.")
-        sources = ["Document chunk 1", "Document chunk 2", "Document chunk 3"]
+        sources = result.get("execution_path", [])
         st.session_state.chat_history.append(
             {"question": user_question, "answer": answer, "sources": sources}
         )
@@ -673,7 +673,7 @@ for chat in reversed(st.session_state.chat_history):
             <div class="sources-section">
                 <div class="sources-title">
                     <i class="fas fa-book"></i>
-                    Documents de référence
+                    Etapes de Raisonnement et Sources Consultées
                 </div>
                 {''.join([f'<div class="source-card"><i class="fas fa-file-alt"></i> {src}</div>' for src in chat["sources"]])}
             </div>

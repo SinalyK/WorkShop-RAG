@@ -8,27 +8,18 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 import backoff
 import chromadb
-import numpy as np
 from dotenv import load_dotenv
 from google.api_core.exceptions import ResourceExhausted
-from IPython.display import Markdown, display
-from langchain_chroma import Chroma
-from langchain_classic.chains.query_constructor.schema import AttributeInfo
-from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
-from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
 from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 from sentence_transformers import CrossEncoder, SentenceTransformer
 from termcolor import colored  # pip install termcolor
+from langchain_core.tools import Tool
 
 load_dotenv(override=True)
 
@@ -36,7 +27,7 @@ load_dotenv(override=True)
 model = SentenceTransformer("distiluse-base-multilingual-cased-v2")
 
 
-chroma_client = chromadb.PersistentClient(path="./chroma_store")
+chroma_client = chromadb.PersistentClient(path="./../chroma_store")
 collection = chroma_client.get_or_create_collection(name="agentic_collection")
 
 
@@ -65,10 +56,6 @@ def transforme_docs(candidate_docs):
         )
 
     return candidate_docs_c
-
-
-# test bi encoding
-llm_groq = ChatGroq(model="openai/gpt-oss-20b")
 
 
 # llm calling
@@ -199,9 +186,9 @@ def fillful_data(query, template=system_cot):
         return "query must be a string"
 
     context = reranker_rag(query)
-    verbose_context(context)
-    return template.format(user_query=query, rag_context=context if context else "None")
-
+    #verbose_context(context)
+    #return template.format(user_query=query, rag_context=context if context else "None")
+    return context
 
 """## LLM Judges"""
 
@@ -231,7 +218,7 @@ Give:
 
 from pydantic import BaseModel, Field, field_validator
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
 logger = Logger(__name__)
 
@@ -530,6 +517,7 @@ class ReActAgent:
 
         # memory management
         self.steps = []
+        groq = False
 
         try:
             final_prompt = (
@@ -539,12 +527,22 @@ class ReActAgent:
                 )
                 + final_formatted_prompt_
             )
-            # final_answer = await self._safe_final_invoke(
-            #     [HumanMessage(content=final_prompt)]
-            # )
-            # if isinstance(final_answer, MarkdownAnswer):
-            # print("bien de utilisé, final answer")
-            # self.state["final_answer"] = final_answer #.markdown_answer
+            final_answer = await self._safe_final_invoke(
+                [HumanMessage(content=final_prompt)], structured_output=False
+            )
+            if isinstance(final_answer, MarkdownAnswer)  or 1:
+                print("bien de utilisé, final answer")
+
+                if not groq:
+                    content = final_answer.markdown_answer
+                else:
+                    try:
+                        data = json.loads(final_answer.content)
+                        content = data.get("markdown_answer", final_answer.content)
+                    except Exception as e:
+                        content = final_answer.content
+
+                self.state["final_answer"] = content
         except Exception as e:
             traceback.print_exc()
             print(f"l'erreur de appel final: {e}")
@@ -749,7 +747,10 @@ class ReActAgent:
         return path
 
     def _rotate_llm(self):
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        if not isinstance(self.llm, ChatGoogleGenerativeAI):
+            self.llm = ChatGroq(model="openai/gpt-oss-20b")
+        else:
+            self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
     @backoff.on_exception(
         backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None
@@ -775,9 +776,12 @@ class ReActAgent:
     @backoff.on_exception(
         backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None
     )
-    async def _safe_final_invoke(self, full_messages):
+    async def _safe_final_invoke(self, full_messages,  structured_output=True):
         try:
-            return await self.llm_with_structured_output.ainvoke(full_messages)
+            if structured_output:
+                return await self.llm_with_structured_output.ainvoke(full_messages)
+            else:
+                return await self.llm.ainvoke(full_messages)
         except ResourceExhausted as e:
             print("[Quota] Clé API dépassée, on change...")
             self._rotate_llm()
@@ -797,10 +801,16 @@ class ReActAgent:
 
             if "weatheraction" in text.lower():
                 text = "WeatherAction"
-            if "chromaretriever" in text.lower():
+            if "retriever" in text.lower():
                 text = "Retriever"
             if "tavilysearch" in text.lower():
                 text = "TavilySearch"
+
+            if text not in self.tool_map:
+                print(f"Action inconnue détectée : {text}")
+                text = "Retriever"
+
+            print(f"Action nettoyée : {text}")
         except:
             pass
         return text
@@ -850,10 +860,8 @@ def get_weather_by_city(city: str):
         return e
 
 
-get_weather_by_city("Berkane")
-
 ### Tools
-from langchain_core.tools import Tool
+
 
 retriever_tool = Tool(
     name="Retriever",
@@ -871,10 +879,13 @@ search_tool = Tool(
 
 weather_tool = Tool(name="WeatherAction", func=get_weather_by_city, description="")
 
-weather_tool.func("Oujda")
 
+load_dotenv(override=True)
 llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+llm_groq = ChatGroq(model="openai/gpt-oss-20b")
+
 
 tools = [retriever_tool, search_tool, weather_tool]
 
-agent = ReActAgent(llm=llm_groq, tools=tools)
+
+agent = ReActAgent(llm=llm, tools=tools)

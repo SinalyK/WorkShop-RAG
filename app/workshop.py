@@ -1,103 +1,65 @@
 from logging import Logger
+import os
 
 import chromadb
 from dotenv import load_dotenv
-from langchain_chroma import Chroma
-from langchain_classic.chains.query_constructor.schema import AttributeInfo
-from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import CrossEncoder, SentenceTransformer
-from termcolor import colored  # pip install termcolor
-from agent import ReActAgent
+from app.agent import ReActAgent
+import requests
+from langchain_core.tools import Tool
 load_dotenv(override = True)
 logger = Logger(__name__)
 
 
-path = "docs/Building_Agentic_AI_Systems_Create_intelligent,_autonomous_AI_agents.pdf"
-loader = PyPDFLoader(path)
-
-documents = loader.load()
-
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
-
-chunks = []
-
-for idx, document in enumerate(documents):
-
-    chunk_lines = text_splitter.split_text(document.page_content)
-
-    for index, chunk in  enumerate(chunk_lines):
-
-        chunks.append({
-            "id" : f"page{idx}_chunk{index}",
-            "content": chunk,
-            "metadata": {
-            "title" : "Building Agentic AI Systems Create_intelligent, autonomous AI agents",
-            "source": "Building_Agentic_AI_Systems_Create_intelligent,_autonomous_AI_agents.pdf",
-            "page": idx
-        }})
-
-
 model = SentenceTransformer("distiluse-base-multilingual-cased-v2")
-
-chroma_client = chromadb.PersistentClient(path="./chroma_store")
-collection = chroma_client.get_or_create_collection(name="agentic_collection")
-
-collection.count()
-
-for chunk in chunks:
-
-    collection.add(
-        ids=chunk["id"],
-        documents=chunk["content"],
-        embeddings=model.encode(chunk["content"]),
-        metadatas = chunk["metadata"]
-    )
-
-
 cross_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
+chroma_client = chromadb.PersistentClient(path=os.getenv("CHROMA_DB_PATH","../chroma_store"))
+collection = chroma_client.get_or_create_collection(name="agentic_collection")
 
-# self-retrieving
+def transforme_docs(candidate_docs):
+    candidate_docs_c = []
+    for doc in zip(
+        candidate_docs["ids"][0],
+        candidate_docs["documents"][0],
+        candidate_docs["metadatas"][0],
+    ):
 
-document_content_description = (
-    "Agentic System Book which explains different archetures of AI systems"
-)
+        candidate_docs_c.append(
+            {"id": doc[0], "page_content": doc[1], "metadata": doc[2]}
+        )
 
-embedding_func = embedding_function = HuggingFaceEmbeddings(
-    model_name="distiluse-base-multilingual-cased-v2"
-)
+    return candidate_docs_c
 
-vectorstore = Chroma(
-    persist_directory="./chroma_store",
-    embedding_function=embedding_function,
-    collection_name="agentic_collection",
-)
+def reranker_rag(query: str):
 
-metadata_field_info = [
-    AttributeInfo(
-        name="content",
-        description="Chunk content",
-        type="string",
-    ),
-]
+    query_embedding = model.encode([query]).tolist()
 
-llm_groq = ChatGroq(model = "openai/gpt-oss-20b")
-llm = ChatGoogleGenerativeAI(model = "gemini-2.0-flash")
+    candidate_docs = collection.query(
+        query_embeddings=query_embedding,
+        n_results=5,
+        include=["documents", "metadatas"],
+    )
 
+    pairs = [(query, doc) for doc in candidate_docs["documents"][0]]
 
-self_retriever = SelfQueryRetriever.from_llm(
-    llm_groq,
-    vectorstore,
-    document_content_description,
-    metadata_field_info,
-)
+    scores = cross_model.predict(pairs)
 
+    # Sort candidates by score
+    docs = transforme_docs(candidate_docs)
+    reranked = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+
+    return reranked
+
+def fillful_data(query):
+
+    if not query:
+        return "query must be a string"
+
+    context = reranker_rag(query)
+    return context
 
 
 def get_tavily_engine():
@@ -111,12 +73,9 @@ def get_tavily_engine():
         print(e)
         return object()
 
-tavily = get_tavily_engine()
 
 
 """### Weather API from RapidAPI"""
-
-import requests
 
 def get_weather_by_city(city: str):
 
@@ -126,7 +85,7 @@ def get_weather_by_city(city: str):
         querystring = {"city":city,"lang":"EN"}
 
         headers = {
-        	"x-rapidapi-key": "172266d2e5mshdc26fd674ea88fdp1c18cdjsn941dfcc7a085",
+        	"x-rapidapi-key": "ac0480af20msh9d1cb0e36f13761p1a3064jsnd45e9104368d",
         	"x-rapidapi-host": "open-weather13.p.rapidapi.com"
         }
 
@@ -137,14 +96,10 @@ def get_weather_by_city(city: str):
         return e
 
 
-
-### Tools
-from langchain_core.tools import Tool
-
 retriever_tool = Tool(
     name="Retriever",
-    func=self_retriever.invoke,
-    description="Retrieve book action relevant to the query from Chroma vectorstore.",
+    func=fillful_data,
+    description="Retrieve book action relevant to the query from Chroma vectorstore. requires a {'query': 'your search query'}",
 )
 
 
@@ -152,16 +107,20 @@ retriever_tool = Tool(
 search_tool = Tool(
     name = "TavilySearch",
     func = get_tavily_engine().invoke,
-    description = "Web search engine for retrieving information on internet."
+    description = "Web search engine for retrieving information on internet. requires a {'query': 'your search query'}"
 )
 
 
 weather_tool = Tool(
     name = "WeatherAction",
     func = get_weather_by_city,
-    description = ""
+    description = "Weather API call. requires a {'city': 'city name'}"
 )
 
+
+load_dotenv(override=True)
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+llm_groq = ChatGroq(model="openai/gpt-oss-120b")
 
 tools = [retriever_tool, search_tool, weather_tool]
 
