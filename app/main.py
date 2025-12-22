@@ -3,9 +3,7 @@ from app.workshop import agent
 import asyncio
 
 st.set_page_config(
-    page_title="RAG Intelligent Agent",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    page_title="RAG Intelligent Agent", layout="wide", initial_sidebar_state="collapsed"
 )
 
 # ------------------ Ultra Modern Glassmorphic Theme ------------------
@@ -572,12 +570,15 @@ with st.sidebar:
     st.markdown("### <i class='fas fa-cog'></i> Paramètres", unsafe_allow_html=True)
     st.markdown("---")
     st.markdown("#### <i class='fas fa-magic'></i> Capacités de l'Agent", unsafe_allow_html=True)
-    st.markdown("""
+    st.markdown(
+        """
     - <i class='fas fa-search'></i> Recherche Documentaire
     - <i class='fas fa-brain'></i> Acces internet
     - <i class='fas fa-layer-group'></i> Acces météorologique
     - <i class='fas fa-language'></i> Traitement Linguistique
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
     st.markdown("---")
     st.markdown("#### <i class='fas fa-info-circle'></i> À Propos", unsafe_allow_html=True)
     st.markdown("*Système RAG de nouvelle génération*")
@@ -595,12 +596,12 @@ with col1:
         "",
         placeholder="Posez-moi n'importe quelle question...",
         label_visibility="collapsed",
-        key="user_input"
+        key="user_input",
     )
 with col2:
     ask_button = st.button("Envoyer", use_container_width=True, key="send_btn")
-st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------ Processing ------------------
 if ask_button and user_question:
@@ -634,7 +635,7 @@ for chat in reversed(st.session_state.chat_history):
         """,
         unsafe_allow_html=True,
     )
-    
+
     # Agent message container start
     st.markdown(
         """
@@ -651,10 +652,10 @@ for chat in reversed(st.session_state.chat_history):
         """,
         unsafe_allow_html=True,
     )
-    
+
     # Display markdown content
-    st.write(chat['answer'])
-    
+    st.write(chat["answer"])
+
     # Agent message container end
     st.markdown(
         """
@@ -678,7 +679,7 @@ for chat in reversed(st.session_state.chat_history):
                 {''.join([f'<div class="source-card"><i class="fas fa-file-alt"></i> {src}</div>' for src in chat["sources"]])}
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)

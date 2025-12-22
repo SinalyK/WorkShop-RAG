@@ -51,9 +51,7 @@ def transforme_docs(candidate_docs):
         candidate_docs["metadatas"][0],
     ):
 
-        candidate_docs_c.append(
-            {"id": doc[0], "page_content": doc[1], "metadata": doc[2]}
-        )
+        candidate_docs_c.append({"id": doc[0], "page_content": doc[1], "metadata": doc[2]})
 
     return candidate_docs_c
 
@@ -149,15 +147,11 @@ def verbose_context(documents):
         print(colored("> No documents retrieved.", "red"))
         return
 
-    print(
-        colored(f"\n> Retrouvé {len(documents)} documents:", "yellow", attrs=["bold"])
-    )
+    print(colored(f"\n> Retrouvé {len(documents)} documents:", "yellow", attrs=["bold"]))
 
     for i, doc in enumerate(documents):
         # En-tête du document
-        header = (
-            f"--- [Document {i+1}] ------------------------------------------------"
-        )
+        header = f"--- [Document {i+1}] ------------------------------------------------"
         print(colored(header, "blue"))
 
         # Affichage des métadonnées (Source, page, etc.)
@@ -186,9 +180,10 @@ def fillful_data(query, template=system_cot):
         return "query must be a string"
 
     context = reranker_rag(query)
-    #verbose_context(context)
-    #return template.format(user_query=query, rag_context=context if context else "None")
+    # verbose_context(context)
+    # return template.format(user_query=query, rag_context=context if context else "None")
     return context
+
 
 """## LLM Judges"""
 
@@ -530,7 +525,7 @@ class ReActAgent:
             final_answer = await self._safe_final_invoke(
                 [HumanMessage(content=final_prompt)], structured_output=False
             )
-            if isinstance(final_answer, MarkdownAnswer)  or 1:
+            if isinstance(final_answer, MarkdownAnswer) or 1:
                 print("bien de utilisé, final answer")
 
                 if not groq:
@@ -601,9 +596,7 @@ class ReActAgent:
                 ]
 
         # ReAct steps memory
-        messages = history + [
-            HumanMessage(content=f"Question: {state['user_question']}")
-        ]
+        messages = history + [HumanMessage(content=f"Question: {state['user_question']}")]
 
         # Add previous steps
         messages = messages + self.steps
@@ -617,17 +610,11 @@ class ReActAgent:
             self.steps.append(AIMessage(content=f"Action: {self.state['action']}"))
 
         if self.state.get("action_input"):
-            messages.append(
-                AIMessage(content=f"Action Input: {str(self.state['action_input'])}")
-            )
-            self.steps.append(
-                AIMessage(content=f"Action Input: {str(self.state['action_input'])}")
-            )
+            messages.append(AIMessage(content=f"Action Input: {str(self.state['action_input'])}"))
+            self.steps.append(AIMessage(content=f"Action Input: {str(self.state['action_input'])}"))
 
         if self.state.get("observation"):
-            messages.append(
-                HumanMessage(content=f"Observation: {str(self.state['observation'])}")
-            )
+            messages.append(HumanMessage(content=f"Observation: {str(self.state['observation'])}"))
             self.steps.append(
                 HumanMessage(content=f"Observation: {str(self.state['observation'])}")
             )
@@ -641,9 +628,7 @@ class ReActAgent:
         if not history:
             return "No previous conversations found."
 
-        return await self._safe_invoke(
-            f"Summarize the following conversation history:\n{history}"
-        )
+        return await self._safe_invoke(f"Summarize the following conversation history:\n{history}")
 
     async def _parse_llm_response(self, response: str) -> Dict[str, str]:
         """Parse the LLM response to extract thought, action, etc."""
@@ -659,12 +644,8 @@ class ReActAgent:
 
         async def normalize_response(text: str) -> str:
             text = re.sub(r"(Action:\s*\w+)(Action Input:)", r"\1\n\2", str(text))
-            text = re.sub(
-                r"(Action Input:\s*\{[^}]+\})(Thought:)", r"\1\n\2", str(text)
-            )
-            text = re.sub(
-                r"(Action Input:\s*\{[^}]+\})(Observation:)", r"\1\n\2", str(text)
-            )
+            text = re.sub(r"(Action Input:\s*\{[^}]+\})(Thought:)", r"\1\n\2", str(text))
+            text = re.sub(r"(Action Input:\s*\{[^}]+\})(Observation:)", r"\1\n\2", str(text))
             text = re.sub(r"(Action Input:\s*\{[^}]+\})(Action:)", r"\1\n\2", str(text))
 
             text = text.replace("```json", "").replace("```", "")
@@ -699,9 +680,7 @@ class ReActAgent:
 
         return {
             "question": question,
-            "final_answer": final_state.get(
-                "final_answer", "No final answer generated"
-            ),
+            "final_answer": final_state.get("final_answer", "No final answer generated"),
             "iterations": final_state.get("iteration_count", 0),
             "execution_path": self._extract_execution_path(final_state),
         }
@@ -726,9 +705,7 @@ class ReActAgent:
 
         return {
             "question": question,
-            "final_answer": final_state.get(
-                "final_answer", "No final answer generated"
-            ),
+            "final_answer": final_state.get("final_answer", "No final answer generated"),
             "iterations": final_state.get("iteration_count", 0),
             "execution_path": self._extract_execution_path(final_state),
         }
@@ -752,9 +729,7 @@ class ReActAgent:
         else:
             self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
-    @backoff.on_exception(
-        backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None
-    )
+    @backoff.on_exception(backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None)
     async def _safe_invoke(self, full_messages):
         try:
             chunks = []
@@ -773,10 +748,8 @@ class ReActAgent:
             self._rotate_llm()
             raise e
 
-    @backoff.on_exception(
-        backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None
-    )
-    async def _safe_final_invoke(self, full_messages,  structured_output=True):
+    @backoff.on_exception(backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None)
+    async def _safe_final_invoke(self, full_messages, structured_output=True):
         try:
             if structured_output:
                 return await self.llm_with_structured_output.ainvoke(full_messages)

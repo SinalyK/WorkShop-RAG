@@ -9,15 +9,17 @@ from sentence_transformers import CrossEncoder, SentenceTransformer
 from app.agent import ReActAgent
 import requests
 from langchain_core.tools import Tool
-load_dotenv(override = True)
+
+load_dotenv(override=True)
 logger = Logger(__name__)
 
 
 model = SentenceTransformer("distiluse-base-multilingual-cased-v2")
 cross_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
-chroma_client = chromadb.PersistentClient(path=os.getenv("CHROMA_DB_PATH","../chroma_store"))
+chroma_client = chromadb.PersistentClient(path=os.getenv("CHROMA_DB_PATH", "../chroma_store"))
 collection = chroma_client.get_or_create_collection(name="agentic_collection")
+
 
 def transforme_docs(candidate_docs):
     candidate_docs_c = []
@@ -27,11 +29,10 @@ def transforme_docs(candidate_docs):
         candidate_docs["metadatas"][0],
     ):
 
-        candidate_docs_c.append(
-            {"id": doc[0], "page_content": doc[1], "metadata": doc[2]}
-        )
+        candidate_docs_c.append({"id": doc[0], "page_content": doc[1], "metadata": doc[2]})
 
     return candidate_docs_c
+
 
 def reranker_rag(query: str):
 
@@ -53,6 +54,7 @@ def reranker_rag(query: str):
 
     return reranked
 
+
 def fillful_data(query):
 
     if not query:
@@ -64,6 +66,7 @@ def fillful_data(query):
 
 def get_tavily_engine():
     from langchain_tavily import TavilySearch
+
     try:
         return TavilySearch(
             max_results=5,
@@ -74,19 +77,19 @@ def get_tavily_engine():
         return object()
 
 
-
 """### Weather API from RapidAPI"""
+
 
 def get_weather_by_city(city: str):
 
     try:
         url = "https://open-weather13.p.rapidapi.com/city"
 
-        querystring = {"city":city,"lang":"EN"}
+        querystring = {"city": city, "lang": "EN"}
 
         headers = {
-        	"x-rapidapi-key": "ac0480af20msh9d1cb0e36f13761p1a3064jsnd45e9104368d",
-        	"x-rapidapi-host": "open-weather13.p.rapidapi.com"
+            "x-rapidapi-key": "ac0480af20msh9d1cb0e36f13761p1a3064jsnd45e9104368d",
+            "x-rapidapi-host": "open-weather13.p.rapidapi.com",
         }
 
         response = requests.get(url, headers=headers, params=querystring)
@@ -103,18 +106,17 @@ retriever_tool = Tool(
 )
 
 
-
 search_tool = Tool(
-    name = "TavilySearch",
-    func = get_tavily_engine().invoke,
-    description = "Web search engine for retrieving information on internet. requires a {'query': 'your search query'}"
+    name="TavilySearch",
+    func=get_tavily_engine().invoke,
+    description="Web search engine for retrieving information on internet. requires a {'query': 'your search query'}",
 )
 
 
 weather_tool = Tool(
-    name = "WeatherAction",
-    func = get_weather_by_city,
-    description = "Weather API call. requires a {'city': 'city name'}"
+    name="WeatherAction",
+    func=get_weather_by_city,
+    description="Weather API call. requires a {'city': 'city name'}",
 )
 
 
@@ -124,7 +126,4 @@ llm_groq = ChatGroq(model="openai/gpt-oss-120b")
 
 tools = [retriever_tool, search_tool, weather_tool]
 
-agent = ReActAgent(llm = llm_groq , tools = tools)
-
-
-
+agent = ReActAgent(llm=llm_groq, tools=tools)

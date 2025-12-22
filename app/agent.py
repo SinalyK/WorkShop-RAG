@@ -11,9 +11,10 @@ from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
-from app.prompt import system_prompt_fast,final_formatted_prompt,final_formatted_prompt_
+from app.prompt import system_prompt_fast, final_formatted_prompt, final_formatted_prompt_
 
 logger = Logger(__name__)
+
 
 # State definition
 class AgentState(TypedDict):
@@ -28,8 +29,10 @@ class AgentState(TypedDict):
     iteration_count: int
     max_iterations: int
 
+
 class MarkdownAnswer(BaseModel):
     markdown_answer: str
+
 
 class ReActAgent:
     def __init__(
@@ -105,10 +108,15 @@ class ReActAgent:
 
         # Add system prompt to guide next step
         final_prompt = system_prompt_fast.format(
-            tools_description="\n".join([f"{i+1}. {tool.name}: {tool.description}" for i, tool in enumerate(self.tool_map.values())]), 
-            tools_name = ", ".join([tool.name for tool in self.tool_map.values()])
-            )
-        
+            tools_description="\n".join(
+                [
+                    f"{i+1}. {tool.name}: {tool.description}"
+                    for i, tool in enumerate(self.tool_map.values())
+                ]
+            ),
+            tools_name=", ".join([tool.name for tool in self.tool_map.values()]),
+        )
+
         full_messages = [HumanMessage(content=final_prompt)] + messages
 
         # Get LLM response
@@ -277,7 +285,7 @@ class ReActAgent:
             final_answer = await self._safe_final_invoke(
                 [HumanMessage(content=final_prompt)], structured_output=False
             )
-            if isinstance(final_answer, MarkdownAnswer)  or 1:
+            if isinstance(final_answer, MarkdownAnswer) or 1:
                 print("bien de utilisé, final answer")
 
                 if not groq:
@@ -285,7 +293,7 @@ class ReActAgent:
                 else:
                     try:
                         data = json.loads(final_answer.content)
-                        content = [ d for d in data.values()][-1]
+                        content = [d for d in data.values()][-1]
                     except Exception as e:
                         content = final_answer.content
 
@@ -364,22 +372,15 @@ class ReActAgent:
             self.steps.append(AIMessage(content=f"Action: {self.state['action']}"))
 
         if self.state.get("action_input"):
-            messages.append(
-                AIMessage(content=f"Action Input: {str(self.state['action_input'])}")
-            )
-            self.steps.append(
-                AIMessage(content=f"Action Input: {str(self.state['action_input'])}")
-            )
+            messages.append(AIMessage(content=f"Action Input: {str(self.state['action_input'])}"))
+            self.steps.append(AIMessage(content=f"Action Input: {str(self.state['action_input'])}"))
 
         if self.state.get("observation"):
-            messages.append(
-                HumanMessage(content=f"Observation: {str(self.state['observation'])}")
-            )
+            messages.append(HumanMessage(content=f"Observation: {str(self.state['observation'])}"))
             self.steps.append(
                 HumanMessage(content=f"Observation: {str(self.state['observation'])}")
             )
 
-        
         print(f"Messages reconstruits : {messages}")
         return messages
 
@@ -388,9 +389,7 @@ class ReActAgent:
         if not history:
             return "No previous conversations found."
 
-        return await self._safe_invoke(
-            f"Summarize the following conversation history:\n{history}"
-        )
+        return await self._safe_invoke(f"Summarize the following conversation history:\n{history}")
 
     async def _parse_llm_response(self, response: str) -> Dict[str, str]:
         """Parse the LLM response to extract thought, action, etc."""
@@ -406,12 +405,8 @@ class ReActAgent:
 
         async def normalize_response(text: str) -> str:
             text = re.sub(r"(Action:\s*\w+)(Action Input:)", r"\1\n\2", str(text))
-            text = re.sub(
-                r"(Action Input:\s*\{[^}]+\})(Thought:)", r"\1\n\2", str(text)
-            )
-            text = re.sub(
-                r"(Action Input:\s*\{[^}]+\})(Observation:)", r"\1\n\2", str(text)
-            )
+            text = re.sub(r"(Action Input:\s*\{[^}]+\})(Thought:)", r"\1\n\2", str(text))
+            text = re.sub(r"(Action Input:\s*\{[^}]+\})(Observation:)", r"\1\n\2", str(text))
             text = re.sub(r"(Action Input:\s*\{[^}]+\})(Action:)", r"\1\n\2", str(text))
 
             text = text.replace("```json", "").replace("```", "")
@@ -446,9 +441,7 @@ class ReActAgent:
 
         return {
             "question": question,
-            "final_answer": final_state.get(
-                "final_answer", "No final answer generated"
-            ),
+            "final_answer": final_state.get("final_answer", "No final answer generated"),
             "iterations": final_state.get("iteration_count", 0),
             "execution_path": self._extract_execution_path(final_state),
         }
@@ -473,9 +466,7 @@ class ReActAgent:
 
         return {
             "question": question,
-            "final_answer": final_state.get(
-                "final_answer", "No final answer generated"
-            ),
+            "final_answer": final_state.get("final_answer", "No final answer generated"),
             "iterations": final_state.get("iteration_count", 0),
             "execution_path": self._extract_execution_path(final_state),
         }
@@ -499,9 +490,7 @@ class ReActAgent:
         else:
             self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
-    @backoff.on_exception(
-        backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None
-    )
+    @backoff.on_exception(backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None)
     async def _safe_invoke(self, full_messages):
         try:
             chunks = []
@@ -520,10 +509,8 @@ class ReActAgent:
             self._rotate_llm()
             raise e
 
-    @backoff.on_exception(
-        backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None
-    )
-    async def _safe_final_invoke(self, full_messages,  structured_output=True):
+    @backoff.on_exception(backoff.expo, (ResourceExhausted, Exception), max_tries=7, jitter=None)
+    async def _safe_final_invoke(self, full_messages, structured_output=True):
         try:
             if structured_output:
                 return await self.llm_with_structured_output.ainvoke(full_messages)

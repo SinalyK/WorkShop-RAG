@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG et Agents Intelligents</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            overflow-x: hidden;
+        }
+
+        .slide {
+            width: 960px;
+            height: 540px;
+            margin: 0 auto 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 4rem;
+            position: relative;
+            overflow: hidden;
+            background-color: #0f172a;
+            color: #f1f5f9;
+            border: 1px solid #334155;
+        }
+
+        .slide.center {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3.75rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-bottom: 0.75rem;
+        }
+
+        p, li {
+            font-size: 1.125rem;
+            line-height: 1.6;
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+        }
+
+        ul {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        li:before {
+            content: "▸";
+            color: #38bdf8;
+            position: absolute;
+            left: 0;
+            font-size: 1.25rem;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #cbd5e1;
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+
+        .author {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-top: 2rem;
+        }
+
+        .two-column {
+            display: flex;
+            gap: 2rem;
+            width: 100%;
+            align-items: flex-start;
+        }
+
+        .two-column > div {
+            flex: 1;
+        }
+
+        .highlight {
+            background-color: #1e293b;
+            padding: 1.5rem;
+            border-left: 4px solid #38bdf8;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .highlight p {
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .comp-box {
+            background-color: #1e293b;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: left;
+        }
+
+        .comp-box h4 {
+            color: #38bdf8;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .comp-box p {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+        }
+
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+
+        .pipeline-step {
+            background-color: #1e293b;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 2px solid #38bdf8;
+            font-size: 0.9rem;
+            color: #f1f5f9;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .pipeline-arrow {
+            color: #38bdf8;
+            font-size: 1.5rem;
+        }
+
+        .schema-box {
+            background-color: #1e293b;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            border: 2px solid #38bdf8;
+            text-align: center;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            line-height: 1.8;
+        }
+
+        .key-point {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        .slide-number {
+            position: absolute;
+            bottom: 1rem;
+            right: 1.5rem;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- SLIDE 1: COUVERTURE -->
+<section class="slide center">
+    <h1>Retrieval-Augmented Generation (RAG)</h1>
+    <h1>&</h1>
+    <h1>Agents Intelligents</h1>
+    <p class="subtitle">Architectures modernes pour des systèmes IA fiables et autonomes</p>
+    <div class="slide-number">1</div>
+</section>
+
+<!-- SLIDE 2: LES LIMITES DES LLM SEULS -->
+<section class="slide">
+    <h2>Pourquoi les LLM seuls sont limités</h2>
+    <div class="comparison">
+        <div class="comp-box">
+            <h4>❌ Hallucinations</h4>
+            <p>Le modèle génère des réponses plausibles mais factuellement inexactes ou inventées.</p>
+        </div>
+        <div class="comp-box">
+            <h4>❌ Connaissances figées</h4>
+            <p>Arrêt d'entraînement = pas de mise à jour sur les événements récents.</p>
+        </div>
+        <div class="comp-box">
+            <h4>❌ Absence de mémoire externe</h4>
+            <p>Pas d'accès direct à des documents spécialisés ou des données privées.</p>
+        </div>
+        <div class="comp-box">
+            <h4>❌ Contexte limité</h4>
+            <p>Fenêtre de contexte finie = impossibilité de traiter des corpus très volumineux.</p>
+        </div>
+    </div>
+    <div class="slide-number">2</div>
+</section>
+
+<!-- SLIDE 3: MOTIVATIONS RAG ET AGENTS -->
+<section class="slide">
+    <h2>Motivations : RAG et Agents</h2>
+    <ul>
+        <li><span class="key-point">RAG</span> = augmenter le LLM avec des connaissances externes grounded dans la réalité.</li>
+        <li><span class="key-point">Agents</span> = permettre au modèle de raisonner, planifier et agir dynamiquement.</li>
+    </ul>
+    <div class="highlight">
+        <h3>Objectif commun</h3>
+        <p>Créer des systèmes IA qui sont <strong>fiables</strong>, <strong>transparents</strong>, <strong>à jour</strong> et <strong>autonomes</strong>.</p>
+    </div>
+    <ul>
+        <li>RAG + Agents = la fondation des systèmes IA modernes en production.</li>
+    </ul>
+    <div class="slide-number">3</div>
+</section>
+
+<!-- SLIDE 4: CONCEPT RAG -->
+<section class="slide">
+    <h2>Concept : Retrieval-Augmented Generation</h2>
+    <div class="highlight">
+        <p><span class="key-point">RAG</span> est un paradigme où le LLM ne génère pas une réponse en fonction de ses seuls paramètres internes, mais en s'appuyant sur des <strong>documents externes</strong> récupérés dynamiquement.</p>
+    </div>
+    <h3>Deux composantes clés :</h3>
+    <div class="comparison">
+        <div class="comp-box">
+            <h4>Modèle paramétrique</h4>
+            <p>Connaissances encodées lors de l'entraînement du LLM.</p>
+        </div>
+        <div class="comp-box">
+            <h4>Connaissances externes</h4>
+            <p>Documents, bases de données, APIs accessibles au moment de la requête.</p>
+        </div>
+    </div>
+    <p style="margin-top: 1rem;"><strong>Bénéfice :</strong> réponses ancrées dans la réalité, sources traçables, mises à jour faciles.</p>
+    <div class="slide-number">4</div>
+</section>
+
+<!-- SLIDE 5: ARCHITECTURE RAG (PIPELINE) -->
+<section class="slide">
+    <h2>Architecture RAG : Pipeline détaillé</h2>
+    <div class="pipeline">
+        <div class="pipeline-step">1. Ingestion</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">2. Chunking</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">3. Embeddings</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">4. Indexation</div>
+    </div>
+    <div class="pipeline">
+        <div class="pipeline-step">5. Requête</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">6. Retrieval</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">7. Prompt</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">8. Génération</div>
+    </div>
+    <div class="slide-number">5</div>
+</section>
+
+<!-- SLIDE 6: ÉTAPE 1-2 : INGESTION ET CHUNKING -->
+<section class="slide">
+    <h2>Étapes 1–2 : Ingestion et Chunking</h2>
+    <h3>Ingestion</h3>
+    <ul>
+        <li>Charger les documents bruts (PDF, TXT, Markdown, Web, etc.).</li>
+        <li>Extraire le texte et les métadonnées (nom fichier, page, section, date, etc.).</li>
+    </ul>
+    <h3>Chunking</h3>
+    <ul>
+        <li>Découper les documents en <span class="key-point">chunks</span> (petits morceaux de texte).</li>
+        <li><strong>Paramètres clés :</strong>
+            <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                <li>Taille du chunk (200–1000 tokens typiquement).</li>
+                <li>Overlap / chevauchement (10–20 % pour ne pas couper les idées).</li>
+            </ul>
+        </li>
+    </ul>
+    <div class="slide-number">6</div>
+</section>
+
+<!-- SLIDE 7: STRATÉGIES DE CHUNKING -->
+<section class="slide">
+    <h2>Stratégies de Chunking</h2>
+    <div class="comparison">
+        <div class="comp-box">
+            <h4>Fixed-size</h4>
+            <p>Découpe par taille fixe (ex. 500 tokens). Simple mais peut couper en plein milieu d'une phrase: Python, Langchain</p>
+        </div>
+        <div class="comp-box">
+            <h4>Structurel</h4>
+            <p>Utilise la structure (titres, paragraphes, sections). Sémantiquement cohérent mais plus complexe.</p>
+        </div>
+        <div class="comp-box">
+            <h4>Hybride</h4>
+            <p>Structure + taille fixe. Bon compromis entre cohérence et limite de longueur.</p>
+        </div>
+        <div class="comp-box">
+            <h4>Sémantique</h4>
+            <p>Utilise des modèles pour identifier les limites naturelles. Plus précis mais coûteux.</p>
+        </div>
+    </div>
+    <p style="margin-top: 1rem;"><strong>Choix :</strong> dépend du type de document et du coût acceptable.</p>
+    <div class="slide-number">7</div>
+</section>
+
+<!-- SLIDE 8: ÉTAPES 3-4 : EMBEDDINGS ET INDEXATION -->
+<section class="slide">
+    <h2>Étapes 3–4 : Embeddings et Indexation</h2>
+    <h3>Embeddings (représentation vectorielle)</h3>
+    <ul>
+        <li>Transformer chaque chunk en <span class="key-point">vecteur numérique dense</span> (ex. 384D, 768D).</li>
+        <li>Modèles couramment utilisés : <strong>sentence-transformers</strong>, OpenAI embeddings, etc.</li>
+        <li><strong>Propriété :</strong> textes sémantiquement proches → vecteurs proches dans l'espace.</li>
+    </ul>
+    <h3>Indexation (stockage vectoriel)</h3>
+    <ul>
+        <li>Stocker les vecteurs dans une <span class="key-point">base vectorielle</span> (FAISS, ChromaDB, Pinecone, etc.).</li>
+        <li>Chaque entrée = (embedding, texte original, métadonnées).</li>
+        <li>Permet la recherche par similarité rapide.</li>
+    </ul>
+    <div class="slide-number">8</div>
+</section>
+
+<!-- SLIDE 9: BI-ENCODER VS CROSS-ENCODER -->
+<section class="slide">
+    <h2>Bi-encoder vs Cross-encoder</h2>
+    <div class="comparison">
+        <div class="comp-box">
+            <h4>Bi-encoder</h4>
+            <p><strong>Encodage séparé :</strong> `q = f(query)`, `d = f(doc)`</p>
+            <p><strong>Avantage :</strong> rapide, scalable (pré-calcul).</p>
+            <p><strong>Usage :</strong> retrieval initial sur grand corpus.</p>
+        </div>
+        <div class="comp-box">
+            <h4>Cross-encoder</h4>
+            <p><strong>Encodage joint :</strong> `score = g(query, doc)`</p>
+            <p><strong>Avantage :</strong> plus précis (capture interactions).</p>
+            <p><strong>Usage :</strong> reranking des top‑k candidats.</p>
+        </div>
+    </div>
+    <h3 style="margin-top: 1.5rem;">Stratégie combinée (recommandée)</h3>
+    <p><strong>1.</strong> Bi-encoder + ChromaDB → top‑20 candidats (rapide)</p>
+    <p><strong>2.</strong> Cross-encoder → rerank les 20 → top‑3 (précis)</p>
+    <p><strong>3.</strong> LLM reçoit les 3 meilleurs documents</p>
+    <div class="slide-number">9</div>
+</section>
+
+<!-- SLIDE 10: ÉTAPES 5-8 : RETRIEVAL ET GÉNÉRATION -->
+<section class="slide">
+    <h2>Étapes 5–8 : Retrieval et Génération</h2>
+    <h3>Retrieval</h3>
+    <ul>
+        <li>Encoder la requête utilisateur avec le même modèle que les chunks.</li>
+        <li>Chercher les <span class="key-point">top‑k chunks les plus similaires</span> (similarité cosinus).</li>
+        <li>(Optionnel) Reranker avec un cross-encoder pour affiner le classement.</li>
+    </ul>
+    <h3>Prompt augmentation</h3>
+    <ul>
+        <li>Construire un prompt = question + chunks pertinents + instructions.</li>
+    </ul>
+    <h3>Génération par LLM</h3>
+    <ul>
+        <li>Le LLM génère la réponse <strong>en s'appuyant sur les chunks</strong>.</li>
+        <li>Résultat : réponse ancrée, traçable, moins d'hallucinations.</li>
+    </ul>
+    <div class="slide-number">10</div>
+</section>
+
+<!-- SLIDE 11: CONCEPTS AVANCÉS RAG -->
+<section class="slide">
+    <h2>Concepts avancés en RAG</h2>
+    <ul>
+        <li><span class="key-point">Embeddings statiques vs contextuels</span> :
+            <ul style="margin-left: 2rem;">
+                <li>Statique = même vecteur pour le même chunk (plus rapide).</li>
+                <li>Contextuel = vecteur dépend du contexte (plus précis mais plus lent).</li>
+            </ul>
+        </li>
+        <li><span class="key-point">Trade-off chunk size / recall / precision</span> :
+            <ul style="margin-left: 2rem;">
+                <li>Petit chunk = précis mais perte de contexte.</li>
+                <li>Grand chunk = contexte riche mais bruit.</li>
+            </ul>
+        </li>
+        <li><span class="key-point">Hybrid search</span> : combiner recherche dense (vecteur) + sparse (mots-clés).</li>
+        <li><span class="key-point">Gestion du contexte</span> : compresser ou résumer les chunks pour respecter la fenêtre du LLM.</li>
+    </ul>
+    <div class="slide-number">11</div>
+</section>
+
+<!-- SLIDE 12: CAS D'USAGE RAG -->
+<section class="slide">
+    <h2>Cas d'usage du RAG</h2>
+    <ul>
+        <li><span class="key-point">Question-Answering sur documents privés</span> : chatbot d'entreprise qui répond sur la base de ses documents propriétaires.</li>
+        <li><span class="key-point">Assistants académiques</span> : tutor IA qui explique les concepts avec des cours ou manuels.</li>
+        <li><span class="key-point">Recherche scientifique</span> : agent IA qui interroge des bases de papiers, trouve les pertinents, synthétise.</li>
+        <li><span class="key-point">Chatbots d'entreprise</span> : support client utilisant la FAQ/KB interne.</li>
+        <li><span class="key-point">Analyse et synthèse</span> : résumer des documents volumineux ou des bases de code.</li>
+    </ul>
+    <div class="slide-number">12</div>
+</section>
+
+<!-- SLIDE 13: DÉFINITION D'UN AGENT -->
+<section class="slide">
+    <h2>Qu'est-ce qu'un Agent intelligent ?</h2>
+    <div class="highlight">
+        <p>Un <span class="key-point">agent</span> est un système IA qui peut <strong>observer</strong> son environnement, <strong>décider</strong> d'une action, <strong>agir</strong> (appeler des outils), et <strong>mémoriser</strong> les résultats pour continuer son raisonnement.</p>
+    </div>
+    <h3>Différences clés</h3>
+    <div class="comparison">
+        <div class="comp-box">
+            <h4>LLM simple</h4>
+            <p>Réponse en une étape. Pas de raisonnement multi-étapes.</p>
+        </div>
+        <div class="comp-box">
+            <h4>Pipeline fixe</h4>
+            <p>Chaîne d'étapes prédéfinie. Pas de décision dynamique.</p>
+        </div>
+        <div class="comp-box">
+            <h4>Agent dynamique</h4>
+            <p>Décide à chaque étape quoi faire ensuite.</p>
+        </div>
+    </div>
+    <div class="slide-number">13</div>
+</section>
+
+<!-- SLIDE 14: BOUCLE D'AGENT -->
+<section class="slide">
+    <h2>Boucle d'un Agent</h2>
+    <div class="schema-box">
+        Observation (percevoir l'environnement)
+        ↓
+        Décision (quel tool, quoi faire ?)
+        ↓
+        Action (appeler le tool)
+        ↓
+        Mémorisation (stocker le résultat)
+        ↓
+        Répétition jusqu'à réponse finale
+    </div>
+    <p style="margin-top: 1rem;"><strong>Exemple concret :</strong></p>
+    <ul>
+        <li><strong>Q :</strong> "Quel temps fera-t-il demain à Paris et existe-t-il des événements ?"</li>
+        <li><strong>1ère action :</strong> appeler tool météo pour Paris.</li>
+        <li><strong>2e action :</strong> appeler tool événements pour Paris.</li>
+        <li><strong>Génération :</strong> combiner les résultats pour répondre.</li>
+    </ul>
+    <div class="slide-number">14</div>
+</section>
+
+<!-- SLIDE 15: RÉACT (REASON + ACT) -->
+<section class="slide">
+    <h2>Paradigme ReAct : Reason + Act</h2>
+    <div class="highlight">
+        <p><strong>ReAct</strong> alterne explicitement entre phases de <strong>raisonnement</strong> (Thought) et d'<strong>action</strong> (Act).</p>
+    </div>
+    <h3>Schéma ReAct</h3>
+    <div class="schema-box">
+        Thought: "Pour répondre, je dois d'abord..."
+        ↓
+        Action: retriever.search("mots-clés")
+        ↓
+        Observation: [résultats du tool]
+        ↓
+        Thought: "Avec ces infos, je dois maintenant..."
+        ↓
+        Action: autre_tool()
+        ↓
+        ...
+        ↓
+        Final Answer: "La réponse est..."
+    </div>
+    <p style="margin-top: 1rem;"><strong>Avantage :</strong> transparence, débogage facile, permet de comprendre le raisonnement.</p>
+    <div class="slide-number">15</div>
+</section>
+
+<!-- SLIDE 16: OUTILS (TOOLS) -->
+<section class="slide">
+    <h2>Tools : les outils de l'agent</h2>
+    <p><strong>Un tool</strong> est une fonction que l'agent peut appeler pour interagir avec l'extérieur.</p>
+    <h3>Exemples typiques</h3>
+    <ul>
+        <li><span class="key-point">Retriever RAG</span> : interroger une base vectorielle (Chroma, FAISS, etc.).</li>
+        <li><span class="key-point">Web search</span> : chercher des infos à jour (Tavily, Google, Bing).</li>
+        <li><span class="key-point">API métier</span> : météo, base de données interne, calculs spécialisés.</li>
+        <li><span class="key-point">Outils utilitaires</span> : parsing JSON, conversion de formats, accès fichiers.</li>
+        <li><span class="key-point">Calcul</span> : mathématiques, programmation, simulations.</li>
+    </ul>
+    <p style="margin-top: 1rem;"><strong>Principe :</strong> chaque tool a une <strong>description textuelle</strong> (nom, paramètres, rôle). L'agent lit cette description et décide si/quand l'utiliser.</p>
+    <div class="slide-number">16</div>
+</section>
+
+<!-- SLIDE 17: TOOL CALLING -->
+<section class="slide">
+    <h2>Tool Calling</h2>
+    <div class="highlight">
+        <p><span class="key-point">Tool calling</span> est le mécanisme par lequel l'agent formule un appel à un tool.</p>
+    </div>
+    <h3>Flux typique</h3>
+    <ul>
+        <li>L'agent reçoit une liste de tools disponibles (avec descriptions).</li>
+        <li>Le LLM génère un appel au format structuré (JSON, etc.) : `{"tool": "retriever", "args": {"query": "..."}}"`.</li>
+        <li>Le système exécute le tool et retourne le résultat à l'agent.</li>
+        <li>L'agent intègre le résultat et continue le raisonnement.</li>
+    </ul>
+    <p style="margin-top: 1rem;"><strong>Modèles modernes</strong> (GPT-4, Claude 3, etc.) supportent nativement le tool calling.</p>
+    <div class="slide-number">17</div>
+</section>
+
+<!-- SLIDE 18: MÉMOIRE DE L'AGENT -->
+<section class="slide">
+    <h2>Mémoire et Contexte d'un Agent</h2>
+    <div class="comparison">
+        <div class="comp-box">
+            <h4>Mémoire court terme</h4>
+            <p>Historique de la conversation actuelle. Limité par la fenêtre de contexte du LLM.</p>
+        </div>
+        <div class="comp-box">
+            <h4>Mémoire long terme</h4>
+            <p>Faits ou contextes persistants (RAG sur l'historique, base de données d'apprentissage).</p>
+        </div>
+    </div>
+    <h3 style="margin-top: 1.5rem;">Stratégies</h3>
+    <ul>
+        <li><strong>Summarization :</strong> résumer l'historique ancien pour le compresser.</li>
+        <li><strong>Semantic memory :</strong> stockage vectoriel des faits importants.</li>
+        <li><strong>Knowledge base :</strong> base de faits structurée (triplets sujet-prédicat-objet).</li>
+    </ul>
+    <div class="slide-number">18</div>
+</section>
+
+<!-- SLIDE 19: AGENTS RAG -->
+<section class="slide">
+    <h2>Convergence : Agents RAG</h2>
+    <div class="highlight">
+        <p>Un <span class="key-point">Agent RAG</span> combine la puissance du RAG et la flexibilité des agents : l'agent <strong>décide dynamiquement</strong> quand et comment faire du retrieval.</p>
+    </div>
+    <h3>Architecture Agent RAG</h3>
+    <ul>
+        <li>L'agent <strong>observe</strong> la question utilisateur.</li>
+        <li>Il <strong>décide</strong> : "ai-je besoin de chercher dans les docs ?"</li>
+        <li>Si oui, il <strong>formule une requête optimale</strong> (self-retrieval) et appelle le tool retriever.</li>
+        <li>Il reçoit les documents et <strong>continue son raisonnement</strong>.</li>
+        <li>Il peut faire d'autres appels à d'autres tools (web, API) selon les besoins.</li>
+        <li>Finalement, il <strong>synthétise</strong> et produit la réponse.</li>
+    </ul>
+    <p style="margin-top: 1rem;"><strong>Bénéfice :</strong> flexibilité maximale, capacité à combiner sources, transparence.</p>
+    <div class="slide-number">19</div>
+</section>
+
+<!-- SLIDE 20: DÉFIS EN RAG -->
+<section class="slide">
+    <h2>Défis et limitations du RAG</h2>
+    <ul>
+        <li><span class="key-point">Qualité du retrieval</span> : un mauvais retrieval = mauvaise réponse (GIGO : garbage in, garbage out).</li>
+        <li><span class="key-point">Coût et latence</span> : indexation coûteuse, retrieval + LLM = latence accrue.</li>
+        <li><span class="key-point">Gestion du contexte</span> : fenêtre de contexte limitée du LLM.</li>
+        <li><span class="key-point">Hallucinations résiduelles</span> : même avec RAG, le LLM peut encore halluciner.</li>
+        <li><span class="key-point">Évaluation</span> : mesurer la qualité (rappel, précision, pertinence) est complexe.</li>
+        <li><span class="key-point">Mise à jour des données</span> : indexation incrémentale vs re-indexation complète.</li>
+    </ul>
+    <div class="slide-number">20</div>
+</section>
+
+<!-- SLIDE 21: DÉFIS EN AGENTS -->
+<section class="slide">
+    <h2>Défis et limitations des Agents</h2>
+    <ul>
+        <li><span class="key-point">Boucles infinies</span> : l'agent peut répéter les mêmes actions indéfiniment.</li>
+        <li><span class="key-point">Coût computation</span> : plusieurs appels LLM = coût élevé.</li>
+        <li><span class="key-point">Fiabilité du tool calling</span> : le LLM peut mal parser les appels ou oublier des paramètres.</li>
+        <li><span class="key-point">Sécurité</span> : agent qui a accès à des tools puissants = risques (injections, abus).</li>
+        <li><span class="key-point">Interprétabilité</span> : comprendre pourquoi l'agent a pris telle décision.</li>
+        <li><span class="key-point">Alignement</span> : s'assurer que l'agent se comporte comme prévu.</li>
+    </ul>
+    <div class="slide-number">21</div>
+</section>
+
+<!-- SLIDE 22: BONNES PRATIQUES RAG + AGENTS -->
+<section class="slide">
+    <h2>Bonnes pratiques : RAG + Agents</h2>
+    <ul>
+        <li><span class="key-point">Évaluation systématique</span> : métriques (recall, precision, MRR), benchmarks.</li>
+        <li><span class="key-point">Monitoring en production</span> : tracker la qualité des réponses, les erreurs, les coûts.</li>
+        <li><span class="key-point">Chunking réfléchi</span> : adapter au domaine, tester plusieurs stratégies.</li>
+        <li><span class="key-point">Gestion des erreurs</span> : fallback handlers, timeout limits, rate limiting.</li>
+        <li><span class="key-point">Sécurité</strong> : valider les inputs, contrôler l'accès aux tools sensibles.</li>
+        <li><span class="key-point">Feedback utilisateur</span> : capturer les retours pour améliorer l'indexation/prompts.</li>
+    </ul>
+    <div class="slide-number">22</div>
+</section>
+
+<!-- SLIDE 23: ARCHITECTURE GLOBALE (EXEMPLE) -->
+<section class="slide">
+    <h2>Architecture globale : RAG + Agent</h2>
+    <div class="schema-box">
+        Requête utilisateur
+        ↓
+        [Agent ReAct]
+        ├─ Thought: "Que dois-je faire ?"
+        ├─ Action: Retriever(query) → docs
+        ├─ Action: WebSearch(query) → news
+        ├─ Thought: "Synthèse des infos"
+        └─ Final Answer → Réponse au LLM
+        ↓
+        [LLM] + docs + news → Réponse finale
+        ↓
+        Utilisateur
+    </div>
+    <div class="slide-number">23</div>
+</section>
+
+<!-- SLIDE 24: VERS DES AGENTS PLUS FIABLES -->
+<section class="slide">
+    <h2>Vers des Agents autonomes plus fiables</h2>
+    <ul>
+        <li><span class="key-point">Agents réfléchis</span> : ajouter des étapes d'auto-critique et de vérification.</li>
+        <li><span class="key-point">Multi-agents</span> : spécialistes qui collaborent (débat, consensus).</li>
+        <li><span class="key-point">Learning from feedback</span> : affiner les prompts et la sélection d'outils via l'expérience.</li>
+        <li><span class="key-point">Verification et grounding</span> : vérifier que chaque fait est sourçable.</li>
+        <li><span class="key-point">Transparency & interpretability</span> : logs détaillés, traçabilité complète.</li>
+    </ul>
+    <div class="highlight">
+        <p>La fiabilité vient de la <strong>combinaison</strong> : bonnes données (RAG) + bon raisonnement (agents) + feedback itératif.</p>
+    </div>
+    <div class="slide-number">24</div>
+</section>
+
+<!-- SLIDE 25: RÉSUMÉ CONCEPTS CLÉS -->
+<section class="slide">
+    <h2>Résumé : Concepts clés</h2>
+    <div class="comparison">
+        <div class="comp-box">
+            <h4>RAG</h4>
+            <p><strong>Quoi :</strong> augmenter le LLM avec des sources externes.</p>
+            <p><strong>Comment :</strong> retrieval + prompt augmentation.</p>
+            <p><strong>But :</strong> réponses fiables et traçables.</p>
+        </div>
+        <div class="comp-box">
+            <h4>Agents</h4>
+            <p><strong>Quoi :</strong> système autonome qui raisonne et agit.</p>
+            <p><strong>Comment :</strong> boucle Thought → Action → Observation.</p>
+            <p><strong>But :</strong> flexibilité et capacité de planification.</p>
+        </div>
+    </div>
+    <div class="highlight" style="margin-top: 1rem;">
+        <p><span class="key-point">RAG + Agents</span> = fondation des systèmes IA modernes robustes, transparents et extensibles.</p>
+    </div>
+    <div class="slide-number">25</div>
+</section>
+
+<!-- SLIDE 26: IMPORTANCE EN IA MODERNE -->
+<section class="slide">
+    <h2>Importance du RAG et des Agents dans l'IA moderne</h2>
+    <ul>
+        <li><span class="key-point">Production-ready</span> : passé du prototype au produit viable.</li>
+        <li><span class="key-point">Confiance</span> : hallucinations réduites, sources traçables = meilleure adoption.</li>
+        <li><span class="key-point">Mises à jour faciles</span> : ajouter des documents, de nouveaux tools = scalabilité.</li>
+        <li><span class="key-point">Autonomie</span> : agents capables de planifier et de résoudre des problèmes complexes.</li>
+        <li><span class="key-point">Responsabilité</span> : audit, explainabilité, contrôle des risques.</li>
+    </ul>
+    <p style="margin-top: 1rem;"><strong>Tendance :</strong> les systèmes IA les plus performants combinent RAG + Agents + Fine-tuning + Monitoring.</p>
+    <div class="slide-number">26</div>
+</section>
+
+<!-- SLIDE 27: APPLICATIONS INDUSTRIELLES -->
+<section class="slide">
+    <h2>Applications industrielles et recherche</h2>
+    <ul>
+        <li><span class="key-point">Entreprises</span> : support client, analyse de documents, automatisation de tâches.</li>
+        <li><span class="key-point">Santé</span> : diagnostic assisté, recherche clinique, gestion de dossiers médicaux.</li>
+        <li><span class="key-point">Finance</span> : analyse d'actualités, trading assisté, conformité réglementaire.</li>
+        <li><span class="key-point">Éducation</span> : tutors IA, QA sur cours, génération d'exercices.</li>
+        <li><span class="key-point">Recherche</span> : exploration de littérature, synthèse d'articles, découverte scientifique.</li>
+        <li><span class="key-point">Gouvernance</span> : accès à des données publiques, chatbots administratifs.</li>
+    </ul>
+    <p style="margin-top: 1rem;"><strong>Marché :</strong> croissance exponentielle, investissement massif en R&D.</p>
+    <div class="slide-number">27</div>
+</section>
+
+<!-- SLIDE 28: CONCLUSION -->
+<section class="slide center">
+    <h2>Conclusion</h2>
+    <div class="highlight" style="text-align: left; max-width: 800px;">
+        <p><strong>RAG</strong> et <strong>Agents</strong> ne sont pas des buzzwords : ce sont les briques fondamentales pour construire des systèmes IA fiables, autonomes et responsables.</p>
+        <p style="margin-top: 1rem;"><strong>Votre rôle en tant qu'ingénieur IA :</strong> comprendre ces concepts, savoir quand les appliquer, et les mettre en œuvre de manière rigoureuse.</p>
+    </div>
+    <p style="margin-top: 2rem; font-size: 1.25rem;"><span class="key-point">Prochaines étapes :</span> project hands-on, expérimentations, et feedback itératif !</p>
+    <div class="slide-number">28</div>
+</section>
+
+</body>
+</html>
